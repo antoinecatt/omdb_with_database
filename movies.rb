@@ -10,27 +10,49 @@ configure do
 end
 
 get '/' do
+  erb :index
   #Add code here
 end
 
 
-#Add code here
-
-
-get '/movies/new' do
-  erb :new_movie
+#Add code here 
+get '/results' do
+   c = PGconn.new(:host => "localhost", :dbname => dbname)
+@movies = c.exec_params("SELECT * FROM movie WHERE title = $1;", [params[:movie]])
+c.close
+erb :search
 end
 
-post '/movies' do
+get '/movies/:id' do
+ c = PGconn.new(:host => "localhost", :dbname => dbname)
+@movies = c.exec_params("SELECT * FROM movie WHERE id = $1;", [params[:id]])
+
+c.close
+@title = "title"
+@plot = "plot"
+@genre = "genre"
+@year = "year"
+@actors = " actors"
+end
+
+get '/movies/new' do
+  erb :index
+
+end
+
+get '/movies' do
   c = PGconn.new(:host => "localhost", :dbname => dbname)
-  c.exec_params("INSERT INTO movies (title, year) VALUES ($1, $2)",
-                  [params["title"], params["year"]])
+   # creates a new postgres connection. local connection.
+  c.exec_params("INSERT INTO movie (title, year) VALUES ($1, $2)", # executes params and insert our SQL. first argument.
+                  [params["title"], params["year"]]) # array of values. second argument.
+
   c.close
   redirect '/'
 end
 
+
 def dbname
-  "test.db"
+  "movies"
 end
 
 def create_movies_table
@@ -49,7 +71,7 @@ end
 
 def drop_movies_table
   connection = PGconn.new(:host => "localhost", :dbname => dbname)
-  connection.exec "DROP TABLE movies;"
+  connection.exec "DROP TABLE movie;"
   connection.close
 end
 
@@ -62,7 +84,7 @@ def seed_movies_table
  
   c = PGconn.new(:host => "localhost", :dbname => dbname)
   movies.each do |p|
-    c.exec_params("INSERT INTO movies (title, year) VALUES ($1, $2);", p)
+    c.exec_params("INSERT INTO movie (title, year) VALUES ($1, $2);", p)
   end
   c.close
 end
